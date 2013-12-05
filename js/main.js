@@ -5,17 +5,36 @@ var incidentenRotterdam = [];
 var incidentenStraat = [];
 var straatNaam;
 
+function getDetailsPerTime(){
+	var statDays = [];
+	var statDayPart = [];
+	var statTime = [];
+	var statMonth = [];
+
+	$.each(diefstalArray,function(i,j){
+		var posStatDays = statDays.map(function(e) { return e.dag; }).indexOf(j["Begin dagsoort"]);
+
+		if(posStatDays == -1){
+			statDays.push({dag: j["Begin dagsoort"], aantal: 1 });
+		}else{
+			statDays[posStatDays].aantal = statDays[posStatDays].aantal + 1;
+		}
+
+		
+
+	});
+	console.log(statDays);
+}
+
 function getDetailsPerStreet(incidentenStraat){
 	var lijstmetBuurten = [];
-	var lijstmetTijden = [];
-	console.log(incidentenStraat[0]);
-	var x =0;
+	var lijstmetTijden = [];	
+	$('.buurtLijst').html("");
 
 	$.each(incidentenStraat, function(i,j){
 		var huidigDagdeel = j['Gemiddelde dagdeel (6 uren)'];
 		var posBuurt = lijstmetBuurten.map(function(e) { return e.naam; }).indexOf(j.Buurt);
 		var posTijden = lijstmetTijden.map(function(e) { return e.dagdeel; }).indexOf(huidigDagdeel);
-		
 		if(posBuurt == -1){
 			lijstmetBuurten.push({naam: j.Buurt, aantal:1 });
 		}else{
@@ -30,11 +49,22 @@ function getDetailsPerStreet(incidentenStraat){
 		
 	});
 
+	$.each(lijstmetBuurten, function(index, val) {
+		$('.buurtLijst').append("<li>" + val.naam + ": " + val.aantal + "</li>");
+	});
+
 	$.each(lijstmetTijden, function(index, val) {
-		 $('.wrapper').append('<p>Er zijn ' + val.aantal + ' diefstallen om ' + val.dagdeel + ' in de ' +straatNaam+ '</p>');
+		if(val.dagdeel === "06:00-11:59"){
+			$('.ochtend .bar .inner').css('height', Math.round((val.aantal/incidentenStraat.length)*100)+"%")
+		} else if(val.dagdeel === "12:00-17:59"){
+			$('.middag .bar .inner').css('height', Math.round((val.aantal/incidentenStraat.length)*100)+"%")
+		} else if(val.dagdeel === "18:00-23:59"){
+			$('.avond .bar .inner').css('height', Math.round((val.aantal/incidentenStraat.length)*100)+"%")
+		} else if(val.dagdeel === "00:00-05:59"){
+			$('.nacht .bar .inner').css('height', Math.round((val.aantal/incidentenStraat.length)*100)+"%")
+		}
 	});
 	
-	// $('.wrapper').append('<p>' +incidentenStraat.length+ ' diefstallen in ' +straatNaam+ '</p>');
 }
 
 
@@ -42,29 +72,31 @@ function getDetailsPerStreet(incidentenStraat){
 $(document).ready(function(){
 	$.getJSON( "js/data.json", function( data ) {
 		$.each(data, function(i,j){
+			if(j.Buurt != ""){
 			diefstalArray.push(j);
 			if(j.Plaats == "ROTTERDAM"){
 				incidentenRotterdam.push(j);
 			}
+		}
 		});
 		totalLength = diefstalArray.length;
 		rotterdamLength = incidentenRotterdam.length;
+		getDetailsPerTime(diefstalArray);
 	});
+	
 });
 
 $('#straatForm').on("submit", function(){
 	var incidentenStraat = [];
 	event.preventDefault();
 	straatNaam = $('.streetField').val();
-	// straatNaam = "Heemraadssingel"
+	console.log(diefstalArray[0])
 	$.each(diefstalArray, function(i,a){
-		//tel incidenten in jouw straat
 		if(a.Straat == straatNaam.toUpperCase()){
 			incidentenStraat.push(a);
 		}
 	});
 
-	
 	$('.wrapper').html('<p>' +totalLength+ ' diefstallen in totaal</p>');
 	$('.wrapper').append('<p>' +rotterdamLength+ ' diefstallen in Rotterdam</p>');
 	$('.wrapper').append('<p>' +incidentenStraat.length+ ' diefstallen in ' +straatNaam+ '</p>');
